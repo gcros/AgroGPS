@@ -25,6 +25,7 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.hypot
+import kotlin.math.round
 import kotlin.math.sin
 
 class MainActivity : Activity(), LocationListener {
@@ -199,8 +200,11 @@ class MainActivity : Activity(), LocationListener {
         val northP = Math.toRadians(p.latitude - a.latitude) * 6371000.0
         val len = hypot(eastB, northB)
         if (len < 0.1) return
-        val signed = (eastB * northP - northB * eastP) / len
-        deviationText.text = String.format(Locale("pt", "BR"), "%+.1f m", signed)
+        // A linha A-B define a família de passadas; mostrar desvio até a passada paralela mais próxima.
+        val signedFromBase = (eastB * northP - northB * eastP) / len
+        val nearestPass = round(signedFromBase / implementWidth) * implementWidth
+        val signedDeviation = signedFromBase - nearestPass
+        deviationText.text = String.format(Locale("pt", "BR"), "%+.1f m", signedDeviation)
     }
 
     private fun distanceMeters(a: Location, b: Location): Double {
