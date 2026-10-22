@@ -34,6 +34,7 @@ class MainActivity : Activity(), LocationListener {
     private lateinit var accuracyText: TextView
     private lateinit var deviationText: TextView
     private lateinit var widthText: TextView
+    private lateinit var speedText: TextView
     private lateinit var fieldView: FieldGuidanceView
     private var currentLocation: Location? = null
     private var startPoint: Location? = null
@@ -90,6 +91,10 @@ class MainActivity : Activity(), LocationListener {
         panel.addView(label("DESVIO DA LINHA"))
         deviationText = value("-- m")
         panel.addView(deviationText)
+        panel.addView(space(8))
+        panel.addView(label("VELOCIDADE"))
+        speedText = value("0,0 km/h")
+        panel.addView(speedText)
         panel.addView(space(8))
         panel.addView(label("LARGURA DO IMPLEMENTO"))
         widthText = value("12,0 m")
@@ -172,6 +177,7 @@ class MainActivity : Activity(), LocationListener {
         currentLocation = location
         coordsText.text = String.format(Locale("pt", "BR"), "%.6f\n%.6f", location.latitude, location.longitude)
         accuracyText.text = if (location.hasAccuracy()) String.format(Locale("pt", "BR"), "± %.1f m", location.accuracy) else "Calculando..."
+        speedText.text = String.format(Locale("pt", "BR"), "%.1f km/h", if (location.hasSpeed()) location.speed * 3.6f else 0f)
         statusText.text = "● GPS ATIVO"
         statusText.setTextColor(Color.rgb(112, 224, 139))
         updateDeviation()
