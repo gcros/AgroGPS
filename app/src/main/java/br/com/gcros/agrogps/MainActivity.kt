@@ -242,30 +242,38 @@ class MainActivity : Activity(), LocationListener {
     private fun dp(n: Int) = (n * resources.displayMetrics.density).toInt()
 
     inner class FieldGuidanceView : View(this@MainActivity) {
-        private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         private fun paint(color: Int, stroke: Float = 0f, style: Paint.Style = Paint.Style.FILL) =
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; strokeWidth = stroke; this.style = style; strokeCap = Paint.Cap.ROUND }
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                this.color = color
+                strokeWidth = stroke
+                this.style = style
+                strokeCap = Paint.Cap.ROUND
+            }
 
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
             val w = width.toFloat()
             val h = height.toFloat()
-            canvas.drawRoundRect(RectF(0f, 0f, w, h), dp(12).toFloat(), dp(12).toFloat(), bgPaint.apply { color = Color.rgb(22, 43, 33) })
+            canvas.drawRoundRect(RectF(0f, 0f, w, h), dp(12).toFloat(), dp(12).toFloat(),
+                paint(Color.rgb(22, 43, 33)))
             val grid = paint(Color.rgb(42, 70, 51), dp(1).toFloat())
             var gx = 0f
-            while (gx < w) { canvas.drawLine(gx, 0f, gx, h, grid); gx += dp(32) }
+            while (gx < w) { canvas.drawLine(gx, 0f, gx, h, grid); gx += dp(32).toFloat() }
             var gy = 0f
-            while (gy < h) { canvas.drawLine(0f, gy, w, gy, grid); gy += dp(32) }
+            while (gy < h) { canvas.drawLine(0f, gy, w, gy, grid); gy += dp(32).toFloat() }
 
             val field = Path().apply {
-                moveTo(w * .08f, h * .17f); lineTo(w * .86f, h * .12f)
-                lineTo(w * .94f, h * .81f); lineTo(w * .15f, h * .88f); close()
+                moveTo(w * .08f, h * .17f)
+                lineTo(w * .86f, h * .12f)
+                lineTo(w * .94f, h * .81f)
+                lineTo(w * .15f, h * .88f)
+                close()
             }
             canvas.drawPath(field, paint(Color.rgb(35, 77, 47)))
+
             val a = startPoint
             val b = endPoint
             if (a != null && b != null) {
-                // Projection locale en mètres, orientée sur la ligne réellement marquée.
                 val lat0 = Math.toRadians(a.latitude)
                 val eastB = Math.toRadians(b.longitude - a.longitude) * 6371000.0 * cos(lat0)
                 val northB = Math.toRadians(b.latitude - a.latitude) * 6371000.0
@@ -273,46 +281,53 @@ class MainActivity : Activity(), LocationListener {
                 if (len > 0.1) {
                     val ux = eastB / len
                     val uy = northB / len
-                    val scale = (minOf(w * .70, h * .64) / maxOf(len, implementWidth * 5)).toDouble()
-                    val cx = w * .50
-                    val cy = h * .51
-                    fun px(e: Double, n: Double) = Pair((cx + (e * ux + n * uy) * scale).toFloat(), (cy - (e * uy - n * ux) * scale).toFloat())
-                    val half = len * scale / 2
-                    val basePaint = paint(Color.rgb(255, 196, 66), dp(3).toFloat())
-                    canvas.drawLine((cx - ux * half).toFloat(), (cy + uy * half).toFloat(), (cx + ux * half).toFloat(), (cy - uy * half).toFloat(), basePaint)
-                    val sidePaint = paint(Color.rgb(119, 198, 130), dp(2).toFloat())
+                    val centerX = w * 0.50f
+                    val centerY = h * 0.50f
+                    val scale = (minOf(w * 0.62f, h * 0.58f).toDouble() / maxOf(len, implementWidth * 5.0))
+                    val halfLenPx = (len * scale / 2.0).toFloat()
+                    val alongX = ux.toFloat()
+                    val alongY = -uy.toFloat()
+                    val baseStartX = centerX - alongX * halfLenPx
+                    val baseStartY = centerY - alongY * halfLenPx
+                    val baseEndX = centerX + alongX * halfLenPx
+                    val baseEndY = centerY + alongY * halfLenPx
+                    canvas.drawLine(baseStartX, baseStartY, baseEndX, baseEndY,
+                        paint(Color.rgb(255, 196, 66), dp(3).toFloat()))
+
+                    val lanePaint = paint(Color.rgb(119, 198, 130), dp(2).toFloat())
                     for (offset in -4..4) {
                         if (offset == 0) continue
-                        val side = offset * implementWidth * scale
-                        val ox = (ux * side).toFloat()
-                        val oy = (uy * side).toFloat()
-                        canvas.drawLine(cx - ux.toFloat() * half + ox, cy + uy.toFloat() * half - oy,
-                            cx + ux.toFloat() * half + ox, cy - uy.toFloat() * half - oy, sidePaint)
+                        val sidePx = (offset * implementWidth * scale).toFloat()
+                        val sideX = uy.toFloat() * sidePx
+                        val sideY = ux.toFloat() * sidePx
+                        canvas.drawLine(baseStartX + sideX, baseStartY + sideY,
+                            baseEndX + sideX, baseEndY + sideY, lanePaint)
                     }
+
                     currentLocation?.let { p ->
-                        val east = Math.toRadians(p.longitude - a.longitude) * 6371000.0 * cos(lat0)
-                        val north = Math.toRadians(p.latitude - a.latitude) * 6371000.0
-                        val along = east * ux + north * uy
-                        val cross = east * uy - north * ux
-                        val vx = (cx + along * scale * ux - cross * scale * uy).toFloat()
-                        val vy = (cy - along * scale * uy - cross * scale * ux).toFloat()
-                        canvas.drawCircle(vx, vy, dp(9).toFloat(), paint(Color.rgb(9, 18, 13)))
-                        canvas.drawCircle(vx, vy, dp(5).toFloat(), paint(Color.rgb(255, 255, 255)))
+                        val eastP = Math.toRadians(p.longitude - a.longitude) * 6371000.0 * cos(lat0)
+                        val northP = Math.toRadians(p.latitude - a.latitude) * 6371000.0
+                        val along = eastP * ux + northP * uy
+                        val cross = eastP * uy - northP * ux
+                        val vehicleX = centerX + (along * ux - cross * uy).toFloat() * scale.toFloat()
+                        val vehicleY = centerY - (along * uy + cross * ux).toFloat() * scale.toFloat()
+                        canvas.drawCircle(vehicleX, vehicleY, dp(10).toFloat(), paint(Color.rgb(9, 18, 13)))
+                        canvas.drawCircle(vehicleX, vehicleY, dp(6).toFloat(), paint(Color.WHITE))
+                        canvas.drawCircle(vehicleX, vehicleY, dp(3).toFloat(), paint(Color.rgb(255, 196, 66)))
                     }
                 }
             } else {
                 val lines = paint(Color.rgb(100, 165, 104), dp(2).toFloat())
                 for (i in 0..8) {
-                    val xx = w * (.13f + i * .09f)
-                    canvas.drawLine(xx, h * .24f, xx + w * .08f, h * .78f, lines)
+                    val xx = w * (0.13f + i * 0.09f)
+                    canvas.drawLine(xx, h * 0.24f, xx + w * 0.08f, h * 0.78f, lines)
                 }
-                canvas.drawText("Marque início e fim da passada", dp(14).toFloat(), h - dp(16).toFloat(),
-                    paint(Color.WHITE).apply { textSize = dp(12).toFloat(); typeface = Typeface.DEFAULT_BOLD })
             }
             canvas.drawText("VISÃO DE ORIENTAÇÃO", dp(14).toFloat(), dp(23).toFloat(),
                 paint(Color.WHITE).apply { textSize = dp(12).toFloat(); typeface = Typeface.DEFAULT_BOLD })
-            canvas.drawText(if (a != null && b != null) "Linha base e passadas calculadas" else "Aguardando criação da linha guia",
-                dp(14).toFloat(), h - dp(14).toFloat(),
+            val subtitle = if (a != null && b != null) "Linha base e passadas paralelas aproximadas"
+                else "Marque início e fim da passada"
+            canvas.drawText(subtitle, dp(14).toFloat(), h - dp(14).toFloat(),
                 paint(Color.rgb(188, 214, 190)).apply { textSize = dp(10).toFloat() })
         }
     }
