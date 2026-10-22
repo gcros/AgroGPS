@@ -15,6 +15,7 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
+import android.os.Handler
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -49,8 +50,63 @@ class MainActivity : Activity(), LocationListener {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN or
             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-        buildScreen()
-        requestGps()
+        showSplashScreen()
+    }
+
+    private fun showSplashScreen() {
+        val splash = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(28), dp(20), dp(28), dp(20))
+            setBackgroundColor(Color.rgb(9, 24, 17))
+        }
+        splash.addView(TextView(this).apply {
+            text = "🌱"
+            textSize = 48f
+            gravity = Gravity.CENTER
+        })
+        splash.addView(TextView(this).apply {
+            text = "AgroGPS"
+            textSize = 42f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(146, 230, 151))
+            typeface = Typeface.DEFAULT_BOLD
+        })
+        splash.addView(TextView(this).apply {
+            text = "ORIENTAÇÃO AGRÍCOLA"
+            textSize = 13f
+            gravity = Gravity.CENTER
+            letterSpacing = 0.18f
+            setTextColor(Color.rgb(224, 239, 225))
+        })
+        splash.addView(View(this).apply {
+            setBackgroundColor(Color.rgb(126, 220, 143))
+            layoutParams = LinearLayout.LayoutParams(dp(88), dp(3)).apply {
+                gravity = Gravity.CENTER
+                topMargin = dp(22)
+                bottomMargin = dp(18)
+            }
+        })
+        splash.addView(TextView(this).apply {
+            text = "LINHAS A-B  •  VELOCIDADE  •  DESVIO"
+            textSize = 10f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(139, 174, 145))
+        })
+        splash.addView(TextView(this).apply {
+            text = "Preparando seu campo..."
+            textSize = 12f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(180, 199, 183))
+            setPadding(0, dp(30), 0, 0)
+        })
+        setContentView(splash)
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (!isFinishing) {
+                buildScreen()
+                requestGps()
+            }
+        }, 1600)
     }
 
     private fun buildScreen() {
@@ -224,7 +280,7 @@ class MainActivity : Activity(), LocationListener {
     }
     override fun onResume() {
         super.onResume()
-        if (::locationManager.isInitialized) requestGps()
+        if (::locationManager.isInitialized && ::statusText.isInitialized) requestGps()
     }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
